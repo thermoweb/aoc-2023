@@ -24,10 +24,14 @@ fn concat(first: char, second: char) -> u32 {
     s.parse::<u32>().unwrap()
 }
 
+fn remove_non_digit(s: &str) -> Vec<char> {
+    s.chars().filter(|c| c.is_numeric()).collect::<Vec<_>>()
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let result = input
         .lines()
-        .map(|s| s.chars().filter(|c| c.is_numeric()).collect::<Vec<_>>())
+        .map(remove_non_digit)
         .map(|v| concat(v[0], v[v.len() - 1]))
         .sum::<u32>();
     Some(result)
@@ -37,10 +41,9 @@ pub fn part_two(input: &str) -> Option<u32> {
     let result = input
         .lines()
         .map(replace_numbers)
-        .map(|s| s.chars().filter(|c| c.is_numeric()).collect::<Vec<_>>())
-        .map(|v| concat(v[0], v[v.len() - 1]))
-        .sum::<u32>();
-    Some(result)
+        .collect::<Vec<String>>()
+        .join("\n");
+    Some(part_one(&result).unwrap())
 }
 
 #[cfg(test)]
