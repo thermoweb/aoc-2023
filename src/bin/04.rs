@@ -46,7 +46,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut winned_card = HashMap::new();
+    let mut won_card = HashMap::new();
     let splits = input
         .lines()
         .map(|l| {
@@ -60,13 +60,13 @@ pub fn part_two(input: &str) -> Option<u32> {
             let card = Card {
                 winning_numbers: card.first().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
                 card_numbers: card.last().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
-                num_of_copy: 1 + winned_card.get(&card_id).unwrap_or(&0),
+                num_of_copy: 1 + won_card.get(&card_id).unwrap_or(&0),
             };
             let num_winned = card.get_winning_numbers() as i32;
             for i in card_id + 1..card_id + 1 + num_winned {
-                let current_value = winned_card.get(&i).unwrap_or(&0);
+                let current_value = won_card.get(&i).unwrap_or(&0);
                 // println!("win {} copies of card {}", (1 * card.num_of_copy), i);
-                winned_card.insert(i, current_value + (1 * card.num_of_copy));
+                won_card.insert(i, current_value + (1 * card.num_of_copy));
             }
             card
         })
