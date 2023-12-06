@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 advent_of_code::solution!(6);
 
 #[derive(PartialEq, Debug)]
@@ -22,21 +20,19 @@ impl Race {
 
 fn get_races(input: &str) -> Vec<Race> {
     let (raw_times, raw_records) = input.split_once("\n").unwrap();
-    let times = raw_times.split_whitespace().skip(1).collect::<Vec<_>>();
-    let records = raw_records.split_whitespace().skip(1).collect::<Vec<_>>();
-    let mut results = vec![];
-    for i in 0..times.len() {
-        results.push(Race { time: times[i].parse::<f64>().unwrap(), record: records[i].parse::<f64>().unwrap() })
-    }
-    results
+    let times = raw_times.split_whitespace().skip(1).map(|t| t.parse::<f64>().unwrap());
+    let records = raw_records.split_whitespace().skip(1).map(|r| r.parse::<f64>().unwrap());
+    times
+        .zip(records)
+        .map(|(time, record)| Race { time, record })
+        .collect::<Vec<_>>()
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let races = get_races(input);
-    races
+    get_races(input)
         .iter()
         .map(|r| r.get_solution())
-        .reduce(|a, b| a * b)
+        .product::<u32>()
         .into()
 }
 
@@ -68,7 +64,7 @@ mod tests {
     #[test]
     fn test_get_races() {
         let result = get_races(&advent_of_code::template::read_file("examples", DAY));
-        let expected = vec![Race {time:7f64, record:9f64}, Race {time:15f64, record:40f64}, Race {time:30f64, record:200f64}];
+        let expected = vec![Race { time: 7f64, record: 9f64 }, Race { time: 15f64, record: 40f64 }, Race { time: 30f64, record: 200f64 }];
         assert_eq!(result, expected);
     }
 }
