@@ -7,37 +7,32 @@ advent_of_code::solution!(7);
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 enum HandType {
-    FiveKind,
-    FourKind,
-    FullHouse,
-    ThreeKind,
-    TwoPair,
-    OnePair,
     HighCard,
+    OnePair,
+    TwoPair,
+    ThreeKind,
+    FullHouse,
+    FourKind,
+    FiveKind,
 }
 
 impl HandType {
-    fn from_cards(cards: &Vec<Card>) -> HandType {
-        let jokers = get_num_of_jokers(cards.clone());
-        let hand: Vec<_> = cards
+    fn from_cards(cards: &[Card]) -> HandType {
+        let jokers = Self::get_num_of_jokers(cards.to_owned());
+        let max = cards
             .iter()
             .sorted()
             .dedup()
             .map(|card| {
-                let total = cards
-                    .iter()
-                    .filter(|c| c.eq(&card))
-                    .count();
+                let total = cards.iter().filter(|c| c.eq(&card)).count();
                 if !Joker.eq(card) {
                     total + jokers
                 } else {
                     total
                 }
             })
-            .sorted()
-            .rev()
-            .collect::<Vec<_>>();
-        let best_cards = (hand.get(0).unwrap_or(&0), get_unique_count(cards.clone()));
+            .max();
+        let best_cards = (max.unwrap_or(0), Self::get_unique_count(cards.to_owned()));
         match best_cards {
             (5, _) => FiveKind,
             (4, _) => FourKind,
@@ -48,18 +43,14 @@ impl HandType {
             _ => HighCard,
         }
     }
-}
+    fn get_num_of_jokers(cards: Vec<Card>) -> usize {
+        cards.iter().filter(|c| Joker.eq(c)).count()
+    }
 
-fn get_num_of_jokers(cards: Vec<Card>) -> usize {
-    cards.iter().filter(|c| Joker.eq(c)).count()
-}
-
-fn get_unique_count(cards: Vec<Card>) -> usize {
-    let hand_without_jokers = cards.iter().filter(|c| !Joker.eq(c));
-    hand_without_jokers
-        .sorted()
-        .dedup()
-        .count()
+    fn get_unique_count(cards: Vec<Card>) -> usize {
+        let hand_without_jokers = cards.iter().filter(|c| !Joker.eq(c));
+        hand_without_jokers.sorted().dedup().count()
+    }
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -72,48 +63,55 @@ struct Hand {
 impl Hand {
     fn from(input: &str, j: Card) -> Hand {
         let (cards_raw, bid_raw) = input.split_once(' ').unwrap();
-        let cards = cards_raw.chars().map(|c| Card::from_str(c, j.to_owned()).unwrap()).collect::<Vec<_>>();
+        let cards = cards_raw
+            .chars()
+            .map(|c| Card::from_str(c, j.to_owned()))
+            .collect::<Vec<_>>();
         let hand_type = HandType::from_cards(&cards);
         let bid = bid_raw.parse::<u32>().unwrap();
-        Hand { cards, hand_type, bid }
+        Hand {
+            cards,
+            hand_type,
+            bid,
+        }
     }
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 enum Card {
-    Ace,
-    King,
-    Queen,
-    Janitor,
-    Ten,
-    Nine,
-    Eight,
-    Seven,
-    Six,
-    Five,
-    Four,
-    Three,
-    Two,
     Joker,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Janitor,
+    Queen,
+    King,
+    Ace,
 }
 
 impl Card {
-    fn from_str(str: char, j: Card) -> Option<Card> {
+    fn from_str(str: char, j: Card) -> Card {
         match str {
-            'A' => Some(Ace),
-            'K' => Some(King),
-            'Q' => Some(Queen),
-            'J' => Some(j),
-            'T' => Some(Ten),
-            '9' => Some(Nine),
-            '8' => Some(Eight),
-            '7' => Some(Seven),
-            '6' => Some(Six),
-            '5' => Some(Five),
-            '4' => Some(Four),
-            '3' => Some(Three),
-            '2' => Some(Two),
-            _ => None
+            'A' => Ace,
+            'K' => King,
+            'Q' => Queen,
+            'J' => j,
+            'T' => Ten,
+            '9' => Nine,
+            '8' => Eight,
+            '7' => Seven,
+            '6' => Six,
+            '5' => Five,
+            '4' => Four,
+            '3' => Three,
+            '2' => Two,
+            _ => panic!(),
         }
     }
 }
@@ -125,8 +123,8 @@ pub fn part_one(input: &str) -> Option<u32> {
         .sorted()
         .collect::<Vec<_>>();
     let mut sum = 0;
-    for (rank, hand) in result.iter().rev().enumerate() {
-        sum = sum + (rank as u32 + 1) * hand.bid;
+    for (rank, hand) in result.iter().enumerate() {
+        sum += (rank as u32 + 1) * hand.bid;
     }
     Some(sum)
 }
@@ -138,8 +136,8 @@ pub fn part_two(input: &str) -> Option<u32> {
         .sorted()
         .collect::<Vec<_>>();
     let mut sum = 0;
-    for (rank, hand) in result.iter().rev().enumerate() {
-        sum = sum + (rank as u32 + 1) * hand.bid;
+    for (rank, hand) in result.iter().enumerate() {
+        sum += (rank as u32 + 1) * hand.bid;
     }
     Some(sum)
 }

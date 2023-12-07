@@ -33,11 +33,23 @@ fn get_parts(grid: &Vec<&str>) -> Vec<Part> {
             .find_iter(line)
             .map(|m| {
                 let surr_start = if i > 1 { i - 1 } else { 0 };
-                let surr_end = if i < grid.len() - 1 { i + 2 } else { grid.len() };
-                let mut part = Part { values: vec![], symbol: String::from(&line[m.range()]), surrounding: m.range() };
+                let surr_end = if i < grid.len() - 1 {
+                    i + 2
+                } else {
+                    grid.len()
+                };
+                let mut part = Part {
+                    values: vec![],
+                    symbol: String::from(&line[m.range()]),
+                    surrounding: m.range(),
+                };
                 for l in &grid[surr_start..surr_end] {
-                    let mut values = NUM_REG.find_iter(l)
-                        .map(|m2| Number { value: (&l[m2.range()]).parse().unwrap(), positions: m2.range() })
+                    let mut values = NUM_REG
+                        .find_iter(l)
+                        .map(|m2| Number {
+                            value: l[m2.range()].parse().unwrap(),
+                            positions: m2.range(),
+                        })
                         .filter(|n| n.intersect(part.surrounding.clone()))
                         .map(|n| n.value)
                         .collect::<Vec<_>>();
@@ -54,19 +66,18 @@ fn get_parts(grid: &Vec<&str>) -> Vec<Part> {
 pub fn part_one(input: &str) -> Option<u32> {
     let grid = input.lines().collect::<Vec<_>>();
     let results = get_parts(&grid);
-    Some(results
-        .iter()
-        .map(|p| p.values.iter().sum::<u32>())
-        .sum())
+    Some(results.iter().map(|p| p.values.iter().sum::<u32>()).sum())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
     let grid = input.lines().collect::<Vec<_>>();
-    Some(get_parts(&grid)
-        .iter()
-        .filter(|p| p.values.len() > 1 && p.symbol == "*")
-        .map(|p| p.values[0] * p.values[1])
-        .sum())
+    Some(
+        get_parts(&grid)
+            .iter()
+            .filter(|p| p.values.len() > 1 && p.symbol == "*")
+            .map(|p| p.values[0] * p.values[1])
+            .sum(),
+    )
 }
 
 #[cfg(test)]

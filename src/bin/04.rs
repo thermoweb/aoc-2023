@@ -19,7 +19,10 @@ impl Card {
     }
 
     fn get_winning_numbers(&self) -> u32 {
-        self.card_numbers.iter().filter(|n| self.winning_numbers.contains(n)).count() as u32
+        self.card_numbers
+            .iter()
+            .filter(|n| self.winning_numbers.contains(n))
+            .count() as u32
     }
 }
 
@@ -27,16 +30,21 @@ pub fn part_one(input: &str) -> Option<u32> {
     let splits = input
         .lines()
         .map(|lines| {
-            let card_split = lines
-                .split(": ").collect::<Vec<_>>();
-            let card = card_split
-                .last()
-                .unwrap()
-                .split(" | ")
-                .collect::<Vec<_>>();
+            let card_split = lines.split(": ").collect::<Vec<_>>();
+            let card = card_split.last().unwrap().split(" | ").collect::<Vec<_>>();
             Card {
-                winning_numbers: card.first().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
-                card_numbers: card.last().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
+                winning_numbers: card
+                    .first()
+                    .unwrap()
+                    .split_whitespace()
+                    .map(|n| n.parse::<i32>().unwrap())
+                    .collect::<Vec<_>>(),
+                card_numbers: card
+                    .last()
+                    .unwrap()
+                    .split_whitespace()
+                    .map(|n| n.parse::<i32>().unwrap())
+                    .collect::<Vec<_>>(),
                 num_of_copy: 1,
             }
         })
@@ -51,22 +59,33 @@ pub fn part_two(input: &str) -> Option<u32> {
         .lines()
         .map(|l| {
             let card_split = l.split(": ").collect::<Vec<_>>();
-            let card = card_split
-                .last()
+            let card = card_split.last().unwrap().split(" | ").collect::<Vec<_>>();
+            let card_id = card_split
+                .first()
+                .map(|c| c.split_whitespace().last().unwrap())
                 .unwrap()
-                .split(" | ")
-                .collect::<Vec<_>>();
-            let card_id = card_split.first().map(|c| c.split_whitespace().last().unwrap()).unwrap().parse::<i32>().unwrap();
+                .parse::<i32>()
+                .unwrap();
             let card = Card {
-                winning_numbers: card.first().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
-                card_numbers: card.last().unwrap().split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect::<Vec<_>>(),
+                winning_numbers: card
+                    .first()
+                    .unwrap()
+                    .split_whitespace()
+                    .map(|n| n.parse::<i32>().unwrap())
+                    .collect::<Vec<_>>(),
+                card_numbers: card
+                    .last()
+                    .unwrap()
+                    .split_whitespace()
+                    .map(|n| n.parse::<i32>().unwrap())
+                    .collect::<Vec<_>>(),
                 num_of_copy: 1 + won_card.get(&card_id).unwrap_or(&0),
             };
             let num_winned = card.get_winning_numbers() as i32;
             for i in card_id + 1..card_id + 1 + num_winned {
                 let current_value = won_card.get(&i).unwrap_or(&0);
                 // println!("win {} copies of card {}", (1 * card.num_of_copy), i);
-                won_card.insert(i, current_value + (1 * card.num_of_copy));
+                won_card.insert(i, current_value + card.num_of_copy);
             }
             card
         })
