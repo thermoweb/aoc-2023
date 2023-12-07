@@ -89,7 +89,7 @@ enum Card {
     Eight,
     Nine,
     Ten,
-    Janitor,
+    Jack,
     Queen,
     King,
     Ace,
@@ -119,7 +119,7 @@ impl Card {
 pub fn part_one(input: &str) -> Option<u32> {
     let result: Vec<_> = input
         .lines()
-        .map(|l| Hand::from(l, Janitor))
+        .map(|l| Hand::from(l, Jack))
         .sorted()
         .collect::<Vec<_>>();
     let mut sum = 0;
