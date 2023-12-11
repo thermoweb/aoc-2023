@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use itertools::Itertools;
+use colored::Colorize;
 
 use crate::CellType::{Ground, Pipe, Start};
 use crate::Direction::{East, North, South, West};
@@ -128,39 +129,66 @@ impl Direction {
     }
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
+fn get_path(input: &str) -> Vec<(usize, usize)> {
     let maze = Maze::from(input);
     //println!("{:?}", maze);
     let start = &maze.start.clone().unwrap();
-    println!("starting in {:?}", start.coords);
+    // println!("starting in {:?}", start.coords);
     let neighbours = maze.get_neighbours(&start);
     let pipes = neighbours.iter().filter(|(d, c)| c.is_pipe() && c.can_go(&d.opposite())).collect_vec();
     let mut next = pipes[0].1.coords.clone();
     let mut steps = vec![start.coords];
     while next != start.coords {
-        println!("I'm in {:?}", next);
+        // println!("I'm in {:?}", next);
         let mut possible_direct = vec![];
         if let Pipe(from, to) = &maze.grid[next.0][next.1].cell_type {
-            println!("{:?}, {:?}", from, to);
+            // println!("{:?}, {:?}", from, to);
             possible_direct.push(from);
             possible_direct.push(to);
         }
         let new_cell = next;
         next = maze.get_next_cells(next)
             .iter()
-            .inspect(|(d,c)| println!("go {:?} to {:?} from {:?} ? -> {} - {:?} {:?}", d, c.coords, next, c.can_go(&d.opposite()), c, possible_direct.contains(d)))
+            // .inspect(|(d,c)| println!("go {:?} to {:?} from {:?} ? -> {} - {:?} {:?}", d, c.coords, next, c.can_go(&d.opposite()), c, possible_direct.contains(d)))
             .filter(|(d, c)| c.can_go(&d.opposite()) && possible_direct.contains(d) && c.coords != *steps.last().unwrap())
-            .inspect(|(d,c)| println!("going {:?} {:?} from {:?} -> {:?}", d, c.coords, next, c))
+            // .inspect(|(d,c)| println!("going {:?} {:?} from {:?} -> {:?}", d, c.coords, next, c))
             .collect_vec()[0].1.coords;
         // println!("next = {:?}", next);
         steps.push(new_cell);
     }
-    println!("{:?}.len() = {}", steps, steps.len());
+    steps
+}
+
+pub fn part_one(input: &str) -> Option<u32> {
+    let steps = get_path(input);
+    // println!("{:?}.len() = {}", steps, steps.len());
     Some((steps.len() / 2) as u32)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let steps = get_path(input);
+    let mut inner_cells = vec![];
+    for (y, line) in input.lines().enumerate() {
+        let mut crossed = 0;
+        for (x, c) in line.chars().enumerate() {
+            if steps.contains(&(y, x)) {
+                if c != '-' {
+                    crossed += 1;
+                }
+                print!("{}", c.to_string().green());
+            } else {
+                if crossed % 2 == 1 {
+                    inner_cells.push((y, x));
+                    print!("{}", "I".to_string().red());
+                } else {
+                    print!("{}", "O".to_string().white());
+                }
+            }
+        }
+        println!();
+    }
+    // print_maze(input, steps, inner_cells.clone());
+    Some(inner_cells.len() as u32)
 }
 
 #[cfg(test)]
@@ -175,7 +203,18 @@ mod tests {
 
     #[test]
     fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        let input = ".F----7F7F7F7F-7....
+.|F--7||||||||FJ....
+.||.FJ||||||||L7....
+FJL7L7LJLJ||LJ.L-7..
+L--J.L7...LJS7F-7L7.
+....F-J..F7FJ|L7L7L7
+....L7.F7||L7|.L7L7|
+.....|FJLJ|FJ|F7|.LJ
+....FJL-7.||.||||...
+....L---J.LJ.LJLJ...
+";
+        let result = part_two(input);
+        assert_eq!(result, Some(4));
     }
 }
