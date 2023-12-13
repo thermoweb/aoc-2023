@@ -1,57 +1,162 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
-use once_cell::sync::Lazy;
-use regex::Regex;
+use rayon::prelude::*;
+
+use crate::Spring::{Damaged, Operational, Unknown};
 
 advent_of_code::solution!(12);
 
-fn get_pattern(input: &str) -> Vec<usize> {
-    static OPERATIONAL_REG: Lazy<Regex> = Lazy::new(|| Regex::new(r"\.+").unwrap());
-    let binding = OPERATIONAL_REG.replace_all(input, ".");
-    binding
-        .split('.')
-        .map(|p| p.len())
-        .filter(|p| p > &0)
-        .collect_vec()
+#[derive(Eq, Hash, PartialEq, Clone)]
+enum Spring {
+    Damaged,
+    Operational,
+    Unknown,
 }
 
-fn possible_records(input: Vec<String>, pattern: Vec<usize>) -> Vec<String> {
-    let mut output = vec![];
-
-    let record_to_process = input.iter()
-        .filter(|s| s.contains('?'));
-    if record_to_process.clone().count() == 0 {
-        return input;
+impl Spring {
+    fn to_char(&self) -> char {
+        match self {
+            Damaged => '#',
+            Operational => '.',
+            Unknown => '?',
+        }
     }
-    let processed_records = record_to_process
-        .flat_map(|s| vec![s.replacen('?', ".", 1), s.replacen('?', "#", 1)])
-        .collect_vec();
-    output.extend(processed_records);
-    return possible_records(output, pattern);
+
+    fn to_string(&self) -> String {
+        self.to_char().to_string()
+    }
 }
 
-fn get_valid_records(input: Vec<String>, pattern: Vec<usize>) -> Vec<String> {
-    return possible_records(input, pattern.clone()).iter()
-        .filter(|p| get_pattern(p) == pattern)
-        .map(|s| String::from(s))
-        .collect_vec();
+#[derive(Eq, Hash, PartialEq, Clone)]
+struct Record {
+    springs: String,
+    damaged_groups: Vec<usize>,
+}
+
+impl Record {
+    fn from(input: &str) -> Record {
+        let (raw_springs, raw_damaged) = input.split_once(' ').unwrap();
+        let springs = raw_springs.to_string();
+        let damaged_groups = raw_damaged.split(',').map(|c| c.parse().unwrap()).collect_vec();
+        Record { springs, damaged_groups }
+    }
+    fn from_copies(input: &str, copies: usize) -> Record {
+        let (raw_springs, raw_damaged) = input.split_once(' ').unwrap();
+        let mut springs = raw_springs.to_string();
+        let mut groups = raw_damaged.to_string();
+        if copies > 1 {
+            springs = vec![springs; copies].join(&Unknown.to_string());
+            groups = vec![groups; copies].join(",");
+        }
+        let damaged_groups = groups.split(',').map(|c| c.parse().unwrap()).collect_vec();
+        Record { springs, damaged_groups }
+    }
+
+    fn create(springs: String, damaged_groups: Vec<usize>) -> Option<Record> {
+        let record = Record { springs, damaged_groups };
+        record.reduce()
+    }
+
+    fn reduce(mut self) -> Option<Record> {
+        // mostly inspired by https://github.com/BorisBoutillier/advent-of-code-2023/blob/bfd91d3883eaca0a425e3361d9cffeff7d48fae8/day-12/src/lib.rs#L33
+        let mut start_groups = vec![];
+        let mut current_group = 0;
+        let mut last_operational = None;
+        let mut finished = true;
+        for (i, spring) in self.springs.chars().enumerate() {
+            match spring {
+                '?' => {
+                    finished = false;
+                    break;
+                }
+                '.' => {
+                    if current_group > 0 {
+                        start_groups.push(current_group);
+                        current_group = 0;
+                    }
+                    last_operational = Some(i);
+                }
+                '#' => {
+                    current_group += 1;
+                }
+                _ => unreachable!(),
+            }
+        }
+        if finished {
+            if current_group > 0 {
+                start_groups.push(current_group);
+            }
+            if self.damaged_groups != start_groups {
+                return None;
+            } else {
+                return Some(Record { springs: "".to_string(), damaged_groups: vec![] });
+            }
+        }
+        if start_groups.len() > self.damaged_groups.len()
+            || !start_groups.iter().zip(self.damaged_groups.iter()).all(|(a, b)| a == b)
+            || (current_group > 0
+            && (self.damaged_groups.len() == start_groups.len()
+            || self.damaged_groups[start_groups.len()] < current_group)) {
+            None
+        } else {
+            self.damaged_groups = self.damaged_groups[start_groups.len()..].to_vec();
+            if let Some(id) = last_operational {
+                self.springs = self.springs[id..].to_string();
+            }
+            Some(self)
+        }
+    }
+
+    fn get_permutations(&self, cache: &mut HashMap<Record, usize>) -> usize {
+        if let Some(permutations) = cache.get(self) {
+            *permutations
+        } else {
+            let permuts = self.compute_permutations(cache);
+            cache.insert(self.clone(), permuts);
+            permuts
+        }
+    }
+
+    fn compute_permutations(&self, cache: &mut HashMap<Record, usize>) -> usize {
+        if self.damaged_groups.is_empty() {
+            return !self.springs.contains('#') as usize;
+        }
+        let first_unknown = self.springs.chars().position(|s| s == Unknown.to_char()).unwrap();
+        [Damaged, Operational]
+            .iter()
+            .map(|condition| {
+                let new_springs = [&self.springs[..first_unknown], &self.springs[first_unknown + 1..]].join(&condition.to_string());
+                let record = Record::create(new_springs, self.damaged_groups.clone());
+                record.map(|r| r.get_permutations(cache)).unwrap_or(0)
+            })
+            .sum()
+    }
+}
+
+fn count_possible_records(record: Record) -> usize {
+    let mut cache: HashMap<Record, usize> = HashMap::new();
+    record.get_permutations(&mut cache)
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
     let result = input.lines()
-        .map(|l| l.split_once(' ').unwrap())
-        .map(|(record, expected)| {
-            let exp = expected.split(',').map(|n| n.parse::<usize>().unwrap()).collect_vec();
-            (exp.clone(), get_valid_records(vec![String::from(record)], exp))
-        })
-        // .inspect(|(exp, records)| println!("{:?} , {:?}", exp, records))
-        .map(|(_, records)| records.iter().count())
+        .collect_vec()
+        .par_iter()
+        .map(|l| Record::from(l))
+        .map(|r| count_possible_records(r))
         .sum::<usize>();
-    // println!("{:?}", result);
     Some(result as u32)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let result = input.lines()
+        .collect_vec()
+        .par_iter()
+        .map(|l| Record::from_copies(l, 5))
+        .map(|r| count_possible_records(r))
+        .sum::<usize>();
+    Some(result as u32)
 }
 
 #[cfg(test)]
@@ -67,19 +172,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_possible_records() {
-        let input = vec![String::from("???.###")];
-        let pattern = vec![1, 1, 3];
-        let result = possible_records(input, pattern);
-        println!("{:?}", result);
-    }
-
-    #[test]
-    fn test_get_pattern() {
-        assert_eq!(get_pattern("####.#...#..."), vec![4, 1, 1]);
+        assert_eq!(result, Some(525152));
     }
 }
