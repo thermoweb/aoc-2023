@@ -28,7 +28,9 @@ impl Spring {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone)]
+type Cache = HashMap<Record, usize>;
+
+#[derive(Eq, Hash, PartialEq, Clone, Debug)]
 struct Record {
     springs: String,
     damaged_groups: Vec<usize>,
@@ -108,7 +110,7 @@ impl Record {
         }
     }
 
-    fn get_permutations(&self, cache: &mut HashMap<Record, usize>) -> usize {
+    fn get_permutations(&self, cache: &mut Cache) -> usize {
         if let Some(permutations) = cache.get(self) {
             *permutations
         } else {
@@ -118,9 +120,9 @@ impl Record {
         }
     }
 
-    fn compute_permutations(&self, cache: &mut HashMap<Record, usize>) -> usize {
+    fn compute_permutations(&self, cache: &mut Cache) -> usize {
         if self.damaged_groups.is_empty() {
-            return !self.springs.contains('#') as usize;
+            return if self.springs.contains('#') { 0 } else { 1 };
         }
         let first_unknown = self.springs.chars().position(|s| s == Unknown.to_char()).unwrap();
         [Damaged, Operational]
@@ -135,7 +137,7 @@ impl Record {
 }
 
 fn count_possible_records(record: Record) -> usize {
-    let mut cache: HashMap<Record, usize> = HashMap::new();
+    let mut cache = Cache::new();
     record.get_permutations(&mut cache)
 }
 
@@ -149,14 +151,14 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(result as u32)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
+pub fn part_two(input: &str) -> Option<u64> {
     let result = input.lines()
         .collect_vec()
         .par_iter()
         .map(|l| Record::from_copies(l, 5))
         .map(|r| count_possible_records(r))
         .sum::<usize>();
-    Some(result as u32)
+    Some(result as u64)
 }
 
 #[cfg(test)]
