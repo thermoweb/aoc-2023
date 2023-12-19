@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 use colored::Colorize;
+use regex::Regex;
 
 use crate::CellType::{Ground, Pipe, Start};
 use crate::Direction::{East, North, South, West};
@@ -166,11 +167,19 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let bottom_u_reg = Regex::new(r"L(-*)J").unwrap();
+    let top_u_reg = Regex::new(r"F(-*)7").unwrap();
+    let cross_fj_reg = Regex::new(r"F(-*)J").unwrap();
+    let cross_l7_reg = Regex::new(r"L(-*)7").unwrap();
     let steps = get_path(input);
     let mut inner_cells = vec![];
     for (y, line) in input.lines().enumerate() {
         let mut crossed = 0;
-        for (x, c) in line.chars().enumerate() {
+        let mut new_line = top_u_reg.replace_all(&line.replace("S", "J"), "-$1-").to_string();
+        new_line = bottom_u_reg.replace_all(&new_line, "-$1-").to_string();
+        new_line = cross_fj_reg.replace_all(&new_line, "|$1-").to_string();
+        new_line = cross_l7_reg.replace_all(&new_line, "|$1-").to_string();
+        for (x, c) in new_line.chars().enumerate() {
             if steps.contains(&(y, x)) {
                 if c != '-' {
                     crossed += 1;
@@ -181,7 +190,7 @@ pub fn part_two(input: &str) -> Option<u32> {
                     inner_cells.push((y, x));
                     print!("{}", "I".to_string().red());
                 } else {
-                    print!("{}", "O".to_string().white());
+                    print!("{}", ".".to_string().white());
                 }
             }
         }
@@ -215,6 +224,6 @@ L--J.L7...LJS7F-7L7.
 ....L---J.LJ.LJLJ...
 ";
         let result = part_two(input);
-        assert_eq!(result, Some(4));
+        assert_eq!(result, Some(8));
     }
 }
