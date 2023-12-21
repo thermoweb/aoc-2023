@@ -35,13 +35,13 @@ fn process(input: &str, expected_diff: usize) -> usize {
 
 pub fn part_one(input: &str) -> Option<u64> {
     let result = process(input, 0);
-    println!("result = {:?}", result);
+    // println!("result = {:?}", result);
     Some(result as u64)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
     let result = process(input, 1);
-    println!("result = {:?}", result);
+    // println!("result = {:?}", result);
     Some(result as u64)
 }
 

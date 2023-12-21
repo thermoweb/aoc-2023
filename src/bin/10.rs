@@ -184,17 +184,12 @@ pub fn part_two(input: &str) -> Option<u32> {
                 if c != '-' {
                     crossed += 1;
                 }
-                print!("{}", c.to_string().green());
             } else {
                 if crossed % 2 == 1 {
                     inner_cells.push((y, x));
-                    print!("{}", "I".to_string().red());
-                } else {
-                    print!("{}", ".".to_string().white());
                 }
             }
         }
-        println!();
     }
     // print_maze(input, steps, inner_cells.clone());
     Some(inner_cells.len() as u32)
