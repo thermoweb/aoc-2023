@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::{Range, RangeInclusive};
 
 use itertools::Itertools;
 use once_cell::sync::Lazy;
@@ -65,6 +66,40 @@ impl Rule {
             }
         };
     }
+
+    fn apply_on_ranges(&self, ranges: HashMap<String, Range<u32>>) -> (Vec<(HashMap<String, Range<u32>>, Option<&str>)>) {
+        return match self {
+            Default(route) => vec![(ranges.clone(), Some(route))],
+            Inferior(field, value, route) => {
+                let range = ranges.get(field).unwrap();
+                if range.contains(value) {
+                    let half1 = range.start..*value;
+                    let mut new_ranges1 = ranges.clone();
+                    new_ranges1.insert(String::from(field), half1);
+
+                    let half2 = *value..(range.end + 1);
+                    let mut new_ranges2 = ranges.clone();
+                    new_ranges2.insert(String::from(field), half2);
+                    return vec![(new_ranges1, Some(route)), (new_ranges2, None)];
+                }
+                vec![(ranges.clone(), None)]
+            }
+            Superior(field, value, route) => {
+                let range = ranges.get(field).unwrap();
+                if range.contains(value) {
+                    let half1 = range.start..*value;
+                    let mut new_ranges1 = ranges.clone();
+                    new_ranges1.insert(String::from(field), half1);
+
+                    let half2 = (*value + 1)..(range.end + 1);
+                    let mut new_ranges2 = ranges.clone();
+                    new_ranges2.insert(String::from(field), half2);
+                    return vec![(new_ranges1, None), (new_ranges2, Some(route))];
+                }
+                vec![(ranges.clone(), None)]
+            }
+        };
+    }
 }
 
 fn parse(input: &str) -> (HashMap<String, Vec<Rule>>, Vec<Part>) {
@@ -114,6 +149,17 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let (workflows, _) = parse(input);
+    let start = workflows.get("in").unwrap();
+    let mut ranges = HashMap::new();
+    ranges.insert(String::from("x"), 1..4001);
+    ranges.insert(String::from("m"), 1..4001);
+    ranges.insert(String::from("a"), 1..4001);
+    ranges.insert(String::from("s"), 1..4001);
+    for rule in start {
+        let result = rule.apply_on_ranges(ranges.clone());
+        println!("{:?}", result);
+    }
     None
 }
 
